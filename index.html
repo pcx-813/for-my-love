@@ -105,6 +105,33 @@
             transform: translateY(0);
         }
 
+        /* 音乐控制按钮样式 */
+        #musicToggle {
+            background: linear-gradient(45deg, #d81e5b, #ff6b9c);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 3px 15px rgba(216, 30, 91, 0.4);
+            font-size: 16px;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        #musicToggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(216, 30, 91, 0.6);
+        }
+
         .hidden {
             display: none;
         }
@@ -137,10 +164,26 @@
                 width: 250px;
                 height: 250px;
             }
+            #musicToggle {
+                bottom: 15px;
+                right: 15px;
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- 背景音乐播放器 -->
+    <audio id="bgMusic" loop>
+        <source src="music/bg-music.mp3" type="audio/mpeg">
+        您的浏览器不支持音频元素
+    </audio>
+
+    <!-- 音乐控制按钮 -->
+    <button id="musicToggle" title="点击播放音乐">♫</button>
+
     <div class="container">
         <header>
             <h1>❤️ 我们的回忆解锁挑战 ❤️</h1>
@@ -169,50 +212,85 @@
     </div>
 
     <script>
-        // 问题和答案配置 - 修改了前两个问题的图片路径
+        // 问题和答案配置
         const quizConfig = [
             {
                 question: "你喜欢的人叫什么名字？",
                 options: ["彭小希", "彭中希", "彭大希", "彭成希"],
                 correctAnswer: 3,
                 pieceId: 5,
-                imageUrl: "images/photo1.jpg"  // 改为相对路径
+                imageUrl: "images/photo1.jpg"
             },
             {
                 question: "你叫什么名字？",
                 options: ["田小瑾", "田中瑾", "田大瑾", "田瑾"],
                 correctAnswer: 3,
                 pieceId: 2,
-                imageUrl: "images/photo2.jpg"  // 改为相对路径
+                imageUrl: "images/photo2.jpg"
             },
             {
                 question: "你男朋友的生日？",
                 options: ["3月14日", "5月20日", "8月13日", "10月1日"],
                 correctAnswer: 2,
                 pieceId: 4,
-                imageUrl: "images/photo3.jpg"  // 改为相对路径
+                imageUrl: "images/photo3.jpg"
             },
             {
                 question: "你男朋友是哪里人？",
                 options: ["北京", "上海", "江西", "原神"],
                 correctAnswer: 2,
                 pieceId: 6,
-                imageUrl: "images/photo4.jpg"  // 改为相对路径
+                imageUrl: "images/photo4.jpg"
             },
             {
                 question: "我们第一次旅行去了哪里？",
                 options: ["广东", "成都", "三亚", "东京"],
                 correctAnswer: 0,
                 pieceId: 8,
-                imageUrl: "images/photo5.jpg"  // 改为相对路径
+                imageUrl: "images/photo5.jpg"
             }
         ];
 
         let currentQuestionIndex = 0;
         const startBtn = document.getElementById('startBtn');
         const finalMessage = document.getElementById('finalMessage');
+        const audio = document.getElementById('bgMusic');
+        const musicToggle = document.getElementById('musicToggle');
+        let isMusicPlaying = false;
 
-        // 添加点击事件监听
+        // 初始化音乐设置
+        audio.volume = 0.6; // 设置音量（60%）
+
+        // 音乐控制功能
+        musicToggle.addEventListener('click', function() {
+            if (isMusicPlaying) {
+                audio.pause();
+                musicToggle.innerHTML = '♫';
+                musicToggle.title = '点击播放音乐';
+            } else {
+                audio.play().then(() => {
+                    musicToggle.innerHTML = '■';
+                    musicToggle.title = '点击暂停音乐';
+                }).catch(error => {
+                    console.log('播放失败，可能需要用户交互:', error);
+                    alert('请先点击页面任意位置，然后才能播放音乐哦~');
+                });
+            }
+            isMusicPlaying = !isMusicPlaying;
+        });
+
+        // 页面点击后允许音频播放（解决浏览器自动播放限制）
+        document.body.addEventListener('click', function() {
+            if (!isMusicPlaying) {
+                audio.play().then(() => {
+                    isMusicPlaying = true;
+                    musicToggle.innerHTML = '■';
+                    musicToggle.title = '点击暂停音乐';
+                });
+            }
+        });
+
+        // "开始挑战"按钮的点击事件
         startBtn.addEventListener('click', startQuiz);
 
         function startQuiz() {
@@ -280,6 +358,10 @@
         function showFinalMessage() {
             finalMessage.classList.remove('hidden');
             alert("恭喜你！我们的爱心拼图已经完整了！");
+            
+            // 在完成时可以添加一些庆祝音效（如果需要）
+            // const celebrationSound = new Audio('music/celebration.mp3');
+            // celebrationSound.play();
         }
 
         // 初始化检查
