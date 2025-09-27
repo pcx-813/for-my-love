@@ -132,6 +132,59 @@
             box-shadow: 0 5px 20px rgba(216, 30, 91, 0.6);
         }
 
+        /* 自定义弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 12px;
+            border: 2px solid #e91e63;
+            border-radius: 8px;
+            background: white;
+            color: #e91e63;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option-btn:hover {
+            background: #e91e63;
+            color: white;
+        }
+
+        .close-btn {
+            margin-top: 15px;
+            padding: 8px 20px;
+            background: #ccc;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
         .hidden {
             display: none;
         }
@@ -170,6 +223,14 @@
                 width: 40px;
                 height: 40px;
                 font-size: 14px;
+            }
+            .modal-content {
+                padding: 20px;
+                margin: 10px;
+            }
+            .option-btn {
+                padding: 15px;
+                font-size: 16px;
             }
         }
     </style>
@@ -259,7 +320,7 @@
         let isMusicPlaying = false;
 
         // 初始化音乐设置
-        audio.volume = 0.6; // 设置音量（60%）
+        audio.volume = 0.6;
 
         // 音乐控制功能
         musicToggle.addEventListener('click', function() {
@@ -272,14 +333,13 @@
                     musicToggle.innerHTML = '■';
                     musicToggle.title = '点击暂停音乐';
                 }).catch(error => {
-                    console.log('播放失败，可能需要用户交互:', error);
                     alert('请先点击页面任意位置，然后才能播放音乐哦~');
                 });
             }
             isMusicPlaying = !isMusicPlaying;
         });
 
-        // 页面点击后允许音频播放（解决浏览器自动播放限制）
+        // 页面点击后允许音频播放
         document.body.addEventListener('click', function() {
             if (!isMusicPlaying) {
                 audio.play().then(() => {
@@ -306,50 +366,75 @@
             }
             
             const currentQuiz = quizConfig[currentQuestionIndex];
-            const userAnswer = prompt(`问题 ${currentQuestionIndex + 1}: ${currentQuiz.question}\n\n选项: ${currentQuiz.options.join(', ')}`);
+            
+            // 创建自定义弹窗
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>问题 ${currentQuestionIndex + 1}</h3>
+                    <p>${currentQuiz.question}</p>
+                    <div id="optionsContainer">
+                        ${currentQuiz.options.map((option, index) => 
+                            `<button class="option-btn" onclick="selectAnswer(${index})">${option}</button>`
+                        ).join('')}
+                    </div>
+                    <button class="close-btn" onclick="closeModal()">取消</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
 
-            if (userAnswer !== null) {
-                if (userAnswer === currentQuiz.options[currentQuiz.correctAnswer]) {
-                    alert("答对了！❤️");
-                    fillHeartPiece(currentQuiz.pieceId, currentQuiz.imageUrl);
-                    currentQuestionIndex++;
-                    
-                    if (currentQuestionIndex < quizConfig.length) {
-                        setTimeout(showQuestion, 1000);
-                    } else {
-                        setTimeout(showFinalMessage, 1000);
-                    }
+        // 全局函数供HTML调用
+        window.selectAnswer = function(selectedIndex) {
+            const currentQuiz = quizConfig[currentQuestionIndex];
+            
+            if (selectedIndex === currentQuiz.correctAnswer) {
+                alert("答对了！❤️");
+                fillHeartPiece(currentQuiz.pieceId, currentQuiz.imageUrl);
+                currentQuestionIndex++;
+                
+                if (currentQuestionIndex < quizConfig.length) {
+                    setTimeout(showQuestion, 1000);
                 } else {
-                    alert("再仔细想想哦~");
-                    currentQuestionIndex++;
-                    if (currentQuestionIndex < quizConfig.length) {
-                        setTimeout(showQuestion, 500);
-                    } else {
-                        setTimeout(showFinalMessage, 500);
-                    }
+                    setTimeout(showFinalMessage, 1000);
+                }
+            } else {
+                alert("再仔细想想哦~");
+                currentQuestionIndex++;
+                if (currentQuestionIndex < quizConfig.length) {
+                    setTimeout(showQuestion, 500);
+                } else {
+                    setTimeout(showFinalMessage, 500);
                 }
             }
-        }
+            
+            closeModal();
+        };
+
+        window.closeModal = function() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        };
 
         function fillHeartPiece(pieceId, imageUrl) {
             const pieceToFill = document.querySelector(`.heart-piece[data-id="${pieceId}"]`);
             
             if (pieceToFill) {
-                // 显示加载状态
                 pieceToFill.innerHTML = '<div class="loading-message">加载中...</div>';
                 
                 const img = new Image();
                 img.onload = function() {
-                    // 图片加载成功
                     pieceToFill.innerHTML = '';
                     pieceToFill.style.backgroundImage = `url('${imageUrl}')`;
                     pieceToFill.classList.add('filled');
                 };
                 img.onerror = function() {
-                    // 图片加载失败
                     pieceToFill.innerHTML = '<div class="error-message">图片加载失败</div>';
                     pieceToFill.style.backgroundColor = '#ff6b6b';
-                    console.error(`图片加载失败: ${imageUrl}`);
                 };
                 img.src = imageUrl;
             }
@@ -358,13 +443,8 @@
         function showFinalMessage() {
             finalMessage.classList.remove('hidden');
             alert("恭喜你！我们的爱心拼图已经完整了！");
-            
-            // 在完成时可以添加一些庆祝音效（如果需要）
-            // const celebrationSound = new Audio('music/celebration.mp3');
-            // celebrationSound.play();
         }
 
-        // 初始化检查
         console.log("页面加载完成，脚本已运行");
     </script>
 </body>
