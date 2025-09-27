@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>送给宝贝的爱心拼图</title>
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: #d81e5b;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(216, 30, 91, 0.2);
+        }
+
+        h1 {
+            color: #d81e5b;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        /* 心形容器：3x3网格 */
+        .heart-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 4px;
+            width: 300px;
+            height: 300px;
+            margin: 30px auto;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50,15 C60,5 80,5 90,15 C100,25 100,45 90,55 L50,95 L10,55 C0,45 0,25 10,15 C20,5 40,5 50,15 Z' fill='none' stroke='%23ff9ebc' stroke-width='2'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        /* 每个格子的基础样式 */
+        .heart-piece {
+            background-color: rgba(255, 182, 193, 0.3);
+            border-radius: 5px;
+            transition: all 0.6s ease-in-out;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* 隐藏四个角的格子（非心形部分） */
+        .heart-piece[data-id="1"],
+        .heart-piece[data-id="3"],
+        .heart-piece[data-id="7"],
+        .heart-piece[data-id="9"] {
+            visibility: hidden;
+        }
+
+        /* 填充照片时的动画效果 */
+        .heart-piece.filled {
+            opacity: 1;
+            transform: scale(1.08);
+            box-shadow: 0 5px 15px rgba(255, 105, 180, 0.4);
+            z-index: 1;
+        }
+
+        /* 按钮样式 */
+        #startBtn {
+            background: linear-gradient(45deg, #d81e5b, #ff6b9c);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(216, 30, 91, 0.3);
+        }
+
+        #startBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(216, 30, 91, 0.4);
+        }
+
+        #startBtn:active {
+            transform: translateY(0);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #finalMessage {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            border-left: 4px solid #d81e5b;
+        }
+
+        .loading-message {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 12px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            .heart-container {
+                width: 250px;
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>❤️ 我们的回忆解锁挑战 ❤️</h1>
+            <p>回答问题，用照片拼出属于我们的爱心</p>
+        </header>
+        
+        <!-- 心形拼图容器：3x3网格 -->
+        <div class="heart-container">
+            <div class="heart-piece" data-id="1"></div>
+            <div class="heart-piece" data-id="2"></div>
+            <div class="heart-piece" data-id="3"></div>
+            <div class="heart-piece" data-id="4"></div>
+            <div class="heart-piece" data-id="5"></div>
+            <div class="heart-piece" data-id="6"></div>
+            <div class="heart-piece" data-id="7"></div>
+            <div class="heart-piece" data-id="8"></div>
+            <div class="heart-piece" data-id="9"></div>
+        </div>
+
+        <button id="startBtn">开始挑战</button>
+        
+        <div id="finalMessage" class="hidden">
+            <h2>❤️ 爱心完整了！ ❤️</h2>
+            <p>每一天，你都让我的世界更完整。我爱你！</p>
+        </div>
+    </div>
+
+    <script>
+        // 问题和答案配置 - 修改了前两个问题的图片路径
+        const quizConfig = [
+            {
+                question: "你喜欢的人叫什么名字？",
+                options: ["彭小希", "彭中希", "彭大希", "彭成希"],
+                correctAnswer: 3,
+                pieceId: 5,
+                imageUrl: "images/photo1.jpg"  // 改为相对路径
+            },
+            {
+                question: "你叫什么名字？",
+                options: ["田小瑾", "田中瑾", "田大瑾", "田瑾"],
+                correctAnswer: 3,
+                pieceId: 2,
+                imageUrl: "images/photo2.jpg"  // 改为相对路径
+            },
+            {
+                question: "你男朋友的生日？",
+                options: ["3月14日", "5月20日", "8月13日", "10月1日"],
+                correctAnswer: 2,
+                pieceId: 4,
+                imageUrl: "images/photo3.jpg"  // 改为相对路径
+            },
+            {
+                question: "你男朋友是哪里人？",
+                options: ["北京", "上海", "江西", "原神"],
+                correctAnswer: 2,
+                pieceId: 6,
+                imageUrl: "images/photo4.jpg"  // 改为相对路径
+            },
+            {
+                question: "我们第一次旅行去了哪里？",
+                options: ["广东", "成都", "三亚", "东京"],
+                correctAnswer: 0,
+                pieceId: 8,
+                imageUrl: "images/photo5.jpg"  // 改为相对路径
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        const startBtn = document.getElementById('startBtn');
+        const finalMessage = document.getElementById('finalMessage');
+
+        // 添加点击事件监听
+        startBtn.addEventListener('click', startQuiz);
+
+        function startQuiz() {
+            console.log("开始按钮被点击");
+            startBtn.classList.add('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentQuestionIndex >= quizConfig.length) {
+                showFinalMessage();
+                return;
+            }
+            
+            const currentQuiz = quizConfig[currentQuestionIndex];
+            const userAnswer = prompt(`问题 ${currentQuestionIndex + 1}: ${currentQuiz.question}\n\n选项: ${currentQuiz.options.join(', ')}`);
+
+            if (userAnswer !== null) {
+                if (userAnswer === currentQuiz.options[currentQuiz.correctAnswer]) {
+                    alert("答对了！❤️");
+                    fillHeartPiece(currentQuiz.pieceId, currentQuiz.imageUrl);
+                    currentQuestionIndex++;
+                    
+                    if (currentQuestionIndex < quizConfig.length) {
+                        setTimeout(showQuestion, 1000);
+                    } else {
+                        setTimeout(showFinalMessage, 1000);
+                    }
+                } else {
+                    alert("再仔细想想哦~");
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < quizConfig.length) {
+                        setTimeout(showQuestion, 500);
+                    } else {
+                        setTimeout(showFinalMessage, 500);
+                    }
+                }
+            }
+        }
+
+        function fillHeartPiece(pieceId, imageUrl) {
+            const pieceToFill = document.querySelector(`.heart-piece[data-id="${pieceId}"]`);
+            
+            if (pieceToFill) {
+                // 显示加载状态
+                pieceToFill.innerHTML = '<div class="loading-message">加载中...</div>';
+                
+                const img = new Image();
+                img.onload = function() {
+                    // 图片加载成功
+                    pieceToFill.innerHTML = '';
+                    pieceToFill.style.backgroundImage = `url('${imageUrl}')`;
+                    pieceToFill.classList.add('filled');
+                };
+                img.onerror = function() {
+                    // 图片加载失败
+                    pieceToFill.innerHTML = '<div class="error-message">图片加载失败</div>';
+                    pieceToFill.style.backgroundColor = '#ff6b6b';
+                    console.error(`图片加载失败: ${imageUrl}`);
+                };
+                img.src = imageUrl;
+            }
+        }
+
+        function showFinalMessage() {
+            finalMessage.classList.remove('hidden');
+            alert("恭喜你！我们的爱心拼图已经完整了！");
+        }
+
+        // 初始化检查
+        console.log("页面加载完成，脚本已运行");
+    </script>
+</body>
+</html>
