@@ -207,6 +207,11 @@
             font-size: 12px;
         }
 
+        .success-message {
+            color: green;
+            font-size: 12px;
+        }
+
         /* 响应式设计 */
         @media (max-width: 600px) {
             .container {
@@ -273,7 +278,7 @@
     </div>
 
     <script>
-        // 问题和答案配置
+        // 问题和答案配置 - 使用相对路径
         const quizConfig = [
             {
                 question: "你喜欢的人叫什么名字？",
@@ -321,6 +326,26 @@
 
         // 初始化音乐设置
         audio.volume = 0.6;
+
+        // 预加载图片资源
+        function preloadImages() {
+            console.log("开始预加载图片...");
+            quizConfig.forEach((quiz, index) => {
+                const img = new Image();
+                img.onload = function() {
+                    console.log(`图片 ${index + 1} 预加载成功: ${quiz.imageUrl}`);
+                };
+                img.onerror = function() {
+                    console.error(`图片 ${index + 1} 预加载失败: ${quiz.imageUrl}`);
+                };
+                img.src = quiz.imageUrl;
+            });
+        }
+
+        // 页面加载完成后预加载图片
+        document.addEventListener('DOMContentLoaded', function() {
+            preloadImages();
+        });
 
         // 音乐控制功能
         musicToggle.addEventListener('click', function() {
@@ -424,20 +449,86 @@
             const pieceToFill = document.querySelector(`.heart-piece[data-id="${pieceId}"]`);
             
             if (pieceToFill) {
+                console.log(`正在加载图片: ${imageUrl}`);
                 pieceToFill.innerHTML = '<div class="loading-message">加载中...</div>';
                 
                 const img = new Image();
+                let loadTimeout = setTimeout(() => {
+                    console.error(`图片加载超时: ${imageUrl}`);
+                    pieceToFill.innerHTML = '<div class="error-message">加载超时，请刷新重试</div>';
+                    pieceToFill.style.backgroundColor = '#ffebee';
+                }, 8000); // 8秒超时
+
                 img.onload = function() {
+                    clearTimeout(loadTimeout);
+                    console.log("图片加载成功");
                     pieceToFill.innerHTML = '';
                     pieceToFill.style.backgroundImage = `url('${imageUrl}')`;
                     pieceToFill.classList.add('filled');
+                    
+                    // 添加成功提示
+                    const successMsg = document.createElement('div');
+                    successMsg.className = 'success-message';
+                    successMsg.textContent = '加载成功!';
+                    pieceToFill.appendChild(successMsg);
+                    
+                    setTimeout(() => {
+                        successMsg.remove();
+                    }, 2000);
                 };
+                
                 img.onerror = function() {
+                    clearTimeout(loadTimeout);
+                    console.error(`图片加载失败: ${imageUrl}`);
                     pieceToFill.innerHTML = '<div class="error-message">图片加载失败</div>';
-                    pieceToFill.style.backgroundColor = '#ff6b6b';
+                    pieceToFill.style.backgroundColor = '#ffebee';
+                    
+                    // 尝试备用路径
+                    setTimeout(() => tryAlternativePath(pieceId, imageUrl), 1000);
                 };
+                
                 img.src = imageUrl;
             }
+        }
+
+        function tryAlternativePath(pieceId, originalUrl) {
+            const pieceToFill = document.querySelector(`.heart-piece[data-id="${pieceId}"]`);
+            if (!pieceToFill) return;
+            
+            // 尝试不同的路径格式
+            const altPaths = [
+                originalUrl,
+                './' + originalUrl,
+                originalUrl.replace('images/', ''),
+                '/' + originalUrl
+            ];
+            
+            let currentAttempt = 0;
+            
+            function tryNextPath() {
+                if (currentAttempt >= altPaths.length) {
+                    pieceToFill.innerHTML = '<div class="error-message">请检查图片文件是否存在</div>';
+                    return;
+                }
+                
+                const testUrl = altPaths[currentAttempt];
+                console.log(`尝试路径 ${currentAttempt + 1}: ${testUrl}`);
+                
+                const testImg = new Image();
+                testImg.onload = function() {
+                    console.log(`备用路径成功: ${testUrl}`);
+                    pieceToFill.innerHTML = '';
+                    pieceToFill.style.backgroundImage = `url('${testUrl}')`;
+                    pieceToFill.classList.add('filled');
+                };
+                testImg.onerror = function() {
+                    currentAttempt++;
+                    tryNextPath();
+                };
+                testImg.src = testUrl;
+            }
+            
+            tryNextPath();
         }
 
         function showFinalMessage() {
@@ -445,7 +536,14 @@
             alert("恭喜你！我们的爱心拼图已经完整了！");
         }
 
+        // 初始化检查
         console.log("页面加载完成，脚本已运行");
+        
+        // 添加调试信息
+        console.log("图片路径检查:");
+        quizConfig.forEach((quiz, index) => {
+            console.log(`图片 ${index + 1}: ${quiz.imageUrl}`);
+        });
     </script>
 </body>
 </html>
